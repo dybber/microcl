@@ -3,8 +3,8 @@ is_64=$(shell s=`uname -m`; if (echo $$s | grep x86_64 > /dev/null); then echo 1
 
 ifeq ($(OS),Darwin)
     CC=clang
-    LIB=-framework OpenCL
-    CFLAGS=-Wall -W -O2
+    LIB=
+    CFLAGS=-Wall -W -O2 -framework OpenCL
     INCLUDES=
 else
     CC=gcc
@@ -48,7 +48,7 @@ nvidia: $(join $(EXE_NAME),.nvidia)
 	$(CC) $(CFLAGS) -I$(PATH_TO_AMD_INC) -L$(PATH_TO_AMD_LIB) -Wl,-rpath,$(PATH_TO_AMD_LIB)  -o $@ $< -lOpenCL
 
 %.exe: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(LIB) mcl.c $<
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ mcl.c $< $(LIB)
 
 %.intel:%.c
 	$(CC) $(CFLAGS) -I$(PATH_TO_INTEL_INC) -L$(PATH_TO_INTEL_LIB) -Wl,-rpath,$(PATH_TO_INTEL_LIB) -o $@ $< -lOpenCL

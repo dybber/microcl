@@ -53,18 +53,24 @@ cl_device_id mclGetGpuDeviceID()
     char buf[MCL_MAX_STRING_LENGTH];
     for(cl_uint i = 0; i < num_devices;i++) {
       clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
-      printf("MCL -   Device %s supports ", buf);
+      printf("MCL -   Device %d: %s, which supports ", i, buf);
       clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf, NULL);
       printf("%s\n", buf); 
     }
   }
 
+  if (num_devices < 1) {
+    fprintf(stderr, "MCL - Exiting: No GPU devices available\n");
+    exit(1);
+  }
+
   // Selecting the device
-  cl_device_id device_id = devices[num_devices-1];
+  cl_uint num_device = num_devices - 1;
+  cl_device_id device_id = devices[num_device];
   if (mclLogLevel > 0) {
     char buf[MCL_MAX_STRING_LENGTH];
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
-    printf("MCL - Selected device: %s\n", buf);
+    printf("MCL - Selected device %d: %s\n", num_device, buf);
     if (mclLogLevel > 2) {
       mclPrintDeviceInfo(device_id);
     }
