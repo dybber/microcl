@@ -7,7 +7,7 @@
 #ifdef __APPLE__
 #include <OpenCL/opencl.h>
 #else
-#include <CL/cl.h>
+#include <CL/opencl.h>
 #endif
 
 typedef struct

@@ -5,6 +5,8 @@
 
 #include "mcl_device_info.h"
 
+#include <stdarg.h>
+
 static unsigned int mclLogLevel = 0;
 
 void logOclCall(char* s)

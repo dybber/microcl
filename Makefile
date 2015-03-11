@@ -1,15 +1,25 @@
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-    SYSTEM=apple
-else
-    SYSTEM=intel
-endif
-
-all: $(SYSTEM)
-
+OS := $(shell uname -s)
 is_64=$(shell s=`uname -m`; if (echo $$s | grep x86_64 > /dev/null); then echo 1; fi)
 
-CFLAGS=-Wall -W -O2
+ifeq ($(OS),Darwin)
+    CC=clang
+    LIB=-framework OpenCL
+    CFLAGS=-Wall -W -O2
+    INCLUDES=
+else
+    CC=gcc
+    LIB=-lOpenCL
+    CFLAGS=-fopenmp -O2 -std=c99
+    OPENCL_ROOTDIR ?= /usr/local/cuda
+    OPENCL_LIBDIR  := $(OPENCL_ROOTDIR)/lib64
+    OPENCL_INCDIR  ?= $(OPENCL_ROOTDIR)/include
+    INCLUDES        = -I$(OPENCL_INCDIR) -I. -I../../include
+endif
+
+TEST=vecadd
+TESTEXE=$(join $(TEST),.exe)
+
+all: tests/$(TESTEXE)
 
 # AMD
 PATH_TO_AMD_INC=/opt/AMDAPP/include/
@@ -29,11 +39,6 @@ endif
 PATH_TO_NVIDIA_INC=/usr/local/cuda/include/
 PATH_TO_NVIDIA_LIB=/usr/lib/
 
-EXE_NAME=tests/vecadd
-
-CC=clang
-#CC=gcc
-
 amd:    $(join $(EXE_NAME),.amd)
 apple:  $(join $(EXE_NAME),.apple)
 intel:  $(join $(EXE_NAME),.intel)
@@ -42,8 +47,8 @@ nvidia: $(join $(EXE_NAME),.nvidia)
 %.amd:%.c
 	$(CC) $(CFLAGS) -I$(PATH_TO_AMD_INC) -L$(PATH_TO_AMD_LIB) -Wl,-rpath,$(PATH_TO_AMD_LIB)  -o $@ $< -lOpenCL
 
-%.apple: %.c
-	$(CC) $(CFLAGS) -framework OpenCL -o $@ mcl.c $^
+%.exe: %.c
+	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $(LIB) mcl.c $<
 
 %.intel:%.c
 	$(CC) $(CFLAGS) -I$(PATH_TO_INTEL_INC) -L$(PATH_TO_INTEL_LIB) -Wl,-rpath,$(PATH_TO_INTEL_LIB) -o $@ $< -lOpenCL
@@ -52,10 +57,10 @@ nvidia: $(join $(EXE_NAME),.nvidia)
 	$(CC) $(CFLAGS) -I$(PATH_TO_NVIDIA_INC) -L$(PATH_TO_NVIDIA_LIB) -o $@ $< -lOpenCL
 
 clean:
-	rm -f *.amd *.apple *.intel *.nvidia *.o *~ */*~ */*.apple */*.o
+	rm -f *.amd *.apple *.intel *.nvidia *.o *~ */*~ */*.apple */*.o */*.exe *.exe
 
 TEST=vecadd
 
 .PHONY: test
-test: tests/$(TEST).$(SYSTEM)
-	(cd tests; ./$(TEST).$(SYSTEM))
+test: tests/$(TESTEXE)
+	(cd tests; ./$(TESTEXE))
