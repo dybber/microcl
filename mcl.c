@@ -6,13 +6,33 @@
 #include "mcl_device_info.h"
 
 #include <stdarg.h>
+#include <sys/time.h>
 
 static unsigned int mclLogLevel = 0;
 
-void logOclCall(char* s)
+void logStream(FILE* os, const char* fmt, ...)
+{
+  char buffer[30];
+  struct timeval tv;
+  time_t curtime;
+  gettimeofday(&tv, NULL); 
+  curtime=tv.tv_sec;
+  strftime(buffer,30,"%Y-%m-%d %T.",localtime(&curtime));
+  fprintf(os, "MCL %s%d - ", buffer, tv.tv_usec);
+  va_list args;
+  va_start(args,fmt);
+  vfprintf(os,fmt,args);
+  va_end(args);
+  fprintf(os, "\n");
+}
+
+void logOclCall(const char* fmt, ...)
 {
   if (mclLogLevel > 0) {
-    printf("MCL - Calling %s\n", s);
+    va_list args;
+    va_start(args,fmt);
+    logStream(stdout,fmt,args);
+    va_end(args);
   }
 }
 
@@ -24,11 +44,11 @@ cl_platform_id mclGetPlatformID()
   cl_platform_id* platforms = calloc(sizeof(cl_platform_id), num_platforms);
   clGetPlatformIDs(num_platforms, platforms, NULL);     // populate platform table
   if (mclLogLevel > 1) {
-    printf("MCL - System has %d platform(s):\n", num_platforms);
+    logStream(stdout,"System has %d platform(s):", num_platforms);
     for(cl_uint i = 0; i < num_platforms;i++) {
       char buf[MCL_MAX_STRING_LENGTH];
       clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
-      printf("MCL -   Platform: %s\n", buf);
+      logStream(stdout,"  Platform: %s", buf);
     }
   }
   if (num_platforms == 0) {
@@ -49,13 +69,13 @@ cl_device_id mclGetGpuDeviceID()
   clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
 
   if (mclLogLevel > 1) {
-    printf("MCL - System has %d GPU device(s):\n", num_devices);
-    char buf[MCL_MAX_STRING_LENGTH];
+    logStream(stdout, "System has %d GPU device(s):", num_devices);
+    char buf1[MCL_MAX_STRING_LENGTH];
+    char buf2[MCL_MAX_STRING_LENGTH];
     for(cl_uint i = 0; i < num_devices;i++) {
-      clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
-      printf("MCL -   Device %d: %s, which supports ", i, buf);
-      clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf, NULL);
-      printf("%s\n", buf); 
+      clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf1, NULL);
+      clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf2, NULL);
+      logStream(stdout, "   Device %d: %s, which supports %s", i, buf1, buf2);
     }
   }
 
@@ -70,7 +90,7 @@ cl_device_id mclGetGpuDeviceID()
   if (mclLogLevel > 0) {
     char buf[MCL_MAX_STRING_LENGTH];
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
-    printf("MCL - Selected device %d: %s\n", num_device, buf);
+    logStream(stdout,"Selected device %d: %s", num_device, buf);
     if (mclLogLevel > 2) {
       mclPrintDeviceInfo(device_id);
     }
