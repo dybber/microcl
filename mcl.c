@@ -101,6 +101,7 @@ cl_device_id mclGetGpuDeviceID()
 cl_context mclCreateContext(cl_device_id* device_id) 
 {
   cl_int ret;
+  logOclCall("clCreateContext");
   cl_context context = clCreateContext( NULL, 1, device_id, NULL, NULL, &ret);
   if (ret != CL_SUCCESS) {
     fprintf(stderr, "MCL - Exiting: Failed to create context\n");
