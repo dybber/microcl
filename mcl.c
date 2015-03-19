@@ -7,6 +7,7 @@
 
 #include <stdarg.h>
 #include <sys/time.h>
+#include <time.h>
 
 static unsigned int mclLogLevel = 0;
 
@@ -18,7 +19,7 @@ void logStream(FILE* os, const char* fmt, ...)
   gettimeofday(&tv, NULL); 
   curtime=tv.tv_sec;
   strftime(buffer,30,"%Y-%m-%d %T.",localtime(&curtime));
-  fprintf(os, "MCL %s%d - ", buffer, tv.tv_usec);
+  fprintf(os, "MCL %s%d - ", buffer, (int)tv.tv_usec);
   va_list args;
   va_start(args,fmt);
   vfprintf(os,fmt,args);
