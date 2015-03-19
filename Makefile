@@ -8,11 +8,11 @@ ifeq ($(OS),Darwin)
     INCLUDES=
 else
     CC=gcc
-    LIB=-lOpenCL
     CFLAGS=-fopenmp -O2 -std=c99
     OPENCL_ROOTDIR ?= /usr/local/cuda
     OPENCL_LIBDIR  := $(OPENCL_ROOTDIR)/lib64
     OPENCL_INCDIR  ?= $(OPENCL_ROOTDIR)/include
+    LIB=-L$(OPENCL_LIBDIR) -lOpenCL
     INCLUDES        = -I$(OPENCL_INCDIR) -I. -I../../include
 endif
 
@@ -32,7 +32,7 @@ info: tests/info.out
 
 .PHONY: clean
 clean:
-	rm -f *.amd *.apple *.intel *.nvidia *.o *~ */*~ */*.apple */*.o */*.exe *.exe
+	rm -f *.amd *.apple *.intel *.nvidia *.o *~ */*~ */*.apple */*.o */*.exe *.exe tests/*.out
 
 %.exe: %.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ mcl.c $< $(LIB)
