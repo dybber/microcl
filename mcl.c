@@ -99,6 +99,59 @@ cl_device_id mclGetGpuDeviceID()
   return device_id;
 }
 
+cl_device_id mclGetBestDeviceID()
+{
+  cl_platform_id platform_id = mclGetPlatformID();
+
+  // Info about devices
+  cl_uint num_devices;
+  clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
+  cl_device_id* devices = calloc(sizeof(cl_device_id), num_devices);
+  clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
+
+  if (mclLogLevel > 1) {
+    logStream(stdout, "System has %d device(s):", num_devices);
+    char buf1[MCL_MAX_STRING_LENGTH];
+    char buf2[MCL_MAX_STRING_LENGTH];
+    for(cl_uint i = 0; i < num_devices;i++) {
+      clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf1, NULL);
+      clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf2, NULL);
+      logStream(stdout, "   Device %d: %s, which supports %s", i, buf1, buf2);
+    }
+  }
+
+  if (num_devices < 1) {
+    fprintf(stderr, "MCL - Exiting: No devices available\n");
+    exit(1);
+  }
+
+  // Selecting the device
+  cl_uint num_device = 0;
+  cl_uint bestIndex = 0;
+  for (cl_uint i = 0; i < num_devices; i++) {
+    cl_uint maxComputeUnits, maxClockFrequency;
+    clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &maxComputeUnits, NULL);
+    clGetDeviceInfo(devices[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &maxClockFrequency, NULL);
+    cl_uint index = maxComputeUnits * maxClockFrequency;
+    if (index > bestIndex) {
+      bestIndex = index;
+      num_device = i;
+    }
+  }
+
+  cl_device_id device_id = devices[num_device];
+  if (mclLogLevel > 0) {
+    char buf[MCL_MAX_STRING_LENGTH];
+    clGetDeviceInfo(device_id, CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
+    logStream(stdout,"Selected device %d: %s", num_device, buf);
+    if (mclLogLevel > 2) {
+      mclPrintDeviceInfo(device_id);
+    }
+  }
+  return device_id;
+}
+
+
 cl_context mclCreateContext(cl_device_id* device_id) 
 {
   cl_int ret;
@@ -126,7 +179,7 @@ cl_command_queue mclCreateCommandQueue(cl_context context, cl_device_id device_i
 mclContext mclInitialize(unsigned int log_level) {
   mclLogLevel = log_level;
   mclContext context;
-  context.device_id = mclGetGpuDeviceID();
+  context.device_id = mclGetBestDeviceID();
   context.context = mclCreateContext(&context.device_id);
   context.command_queue = mclCreateCommandQueue(context.context,context.device_id);
   return context;
@@ -191,17 +244,17 @@ inline size_t mclSizeOfType(mclType t) {
 
 mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, mclType type, void* data, cl_int n)
 {
-  // Copy argument to GPU    
+  // Copy argument to device    
   cl_int ret;
   size_t sz = n * mclSizeOfType(type);
   logOclCall("clCreateBuffer");
-  cl_mem data_gpu = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
+  cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
   if (ret != CL_SUCCESS) {
     fprintf(stderr, "MCL - Error creating buffer on device.\n");
     exit(1);
   }
   logOclCall("clEnqueueWriteBuffer");
-  ret = clEnqueueWriteBuffer(ctx.command_queue, data_gpu, CL_TRUE, 0, sz, data, 0, NULL, NULL);
+  ret = clEnqueueWriteBuffer(ctx.command_queue, data_device, CL_TRUE, 0, sz, data, 0, NULL, NULL);
   if (ret != CL_SUCCESS) {
     fprintf(stderr, "MCL - Error copying data to device.\n");
     exit(1);
@@ -209,7 +262,7 @@ mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, mclType type, 
   mclDeviceData res;
   res.buftype = buftype;
   res.type = type;
-  res.data = data_gpu;
+  res.data = data_device;
   res.n = n;
   return res;
 }

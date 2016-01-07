@@ -14,7 +14,7 @@ int main()
     arg1[i] = (float)i;
   }
 
-  // Copy argument to GPU    
+  // Copy argument to device    
   mclDeviceData dev_data = mclDataToDevice(ctx, MCL_RW, MCL_FLOAT, arg1, arg1_sz);
 
   // Call Kernel Program with argument
@@ -24,7 +24,7 @@ int main()
   cl_int ret;
   ret = clEnqueueReadBuffer(ctx.command_queue, dev_data.data, CL_TRUE, 0, arg1_sz * sizeof(float), arg1, 0, NULL, NULL);
   if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Error copying GPU data to host\n");
+    fprintf(stderr, "MCL - Error copying device data to host\n");
     exit(1);
   }
 
