@@ -37,6 +37,73 @@ void logOclCall(const char* fmt, ...)
   }
 }
 
+/* Taken from CLU */
+#define STRINGIFY(x) #x
+#define CASE_STRINGIFY(X) case X : return #X;
+
+const char* mclErrorToString(cl_int errcode_ret)
+{
+    switch (errcode_ret)
+    {
+        CASE_STRINGIFY(CL_SUCCESS);
+        CASE_STRINGIFY(CL_DEVICE_NOT_FOUND);
+        CASE_STRINGIFY(CL_DEVICE_NOT_AVAILABLE);
+        CASE_STRINGIFY(CL_COMPILER_NOT_AVAILABLE);
+        CASE_STRINGIFY(CL_MEM_OBJECT_ALLOCATION_FAILURE);
+        CASE_STRINGIFY(CL_OUT_OF_RESOURCES);
+        CASE_STRINGIFY(CL_OUT_OF_HOST_MEMORY);
+        CASE_STRINGIFY(CL_PROFILING_INFO_NOT_AVAILABLE);
+        CASE_STRINGIFY(CL_MEM_COPY_OVERLAP);
+        CASE_STRINGIFY(CL_IMAGE_FORMAT_MISMATCH);
+        CASE_STRINGIFY(CL_IMAGE_FORMAT_NOT_SUPPORTED);
+        CASE_STRINGIFY(CL_BUILD_PROGRAM_FAILURE);
+        CASE_STRINGIFY(CL_MAP_FAILURE);
+        CASE_STRINGIFY(CL_INVALID_VALUE);
+        CASE_STRINGIFY(CL_INVALID_DEVICE_TYPE);
+        CASE_STRINGIFY(CL_INVALID_PLATFORM);
+        CASE_STRINGIFY(CL_INVALID_DEVICE);
+        CASE_STRINGIFY(CL_INVALID_CONTEXT);
+        CASE_STRINGIFY(CL_INVALID_QUEUE_PROPERTIES);
+        CASE_STRINGIFY(CL_INVALID_COMMAND_QUEUE);
+        CASE_STRINGIFY(CL_INVALID_HOST_PTR);
+        CASE_STRINGIFY(CL_INVALID_MEM_OBJECT);
+        CASE_STRINGIFY(CL_INVALID_IMAGE_FORMAT_DESCRIPTOR);
+        CASE_STRINGIFY(CL_INVALID_IMAGE_SIZE);
+        CASE_STRINGIFY(CL_INVALID_SAMPLER);
+        CASE_STRINGIFY(CL_INVALID_BINARY);
+        CASE_STRINGIFY(CL_INVALID_BUILD_OPTIONS);
+        CASE_STRINGIFY(CL_INVALID_PROGRAM);
+        CASE_STRINGIFY(CL_INVALID_PROGRAM_EXECUTABLE);
+        CASE_STRINGIFY(CL_INVALID_KERNEL_NAME);
+        CASE_STRINGIFY(CL_INVALID_KERNEL_DEFINITION);
+        CASE_STRINGIFY(CL_INVALID_KERNEL);
+        CASE_STRINGIFY(CL_INVALID_ARG_INDEX);
+        CASE_STRINGIFY(CL_INVALID_ARG_VALUE);
+        CASE_STRINGIFY(CL_INVALID_ARG_SIZE);
+        CASE_STRINGIFY(CL_INVALID_KERNEL_ARGS);
+        CASE_STRINGIFY(CL_INVALID_WORK_DIMENSION);
+        CASE_STRINGIFY(CL_INVALID_WORK_GROUP_SIZE);
+        CASE_STRINGIFY(CL_INVALID_WORK_ITEM_SIZE);
+        CASE_STRINGIFY(CL_INVALID_GLOBAL_OFFSET);
+        CASE_STRINGIFY(CL_INVALID_EVENT_WAIT_LIST);
+        CASE_STRINGIFY(CL_INVALID_EVENT);
+        CASE_STRINGIFY(CL_INVALID_OPERATION);
+        CASE_STRINGIFY(CL_INVALID_GL_OBJECT);
+        CASE_STRINGIFY(CL_INVALID_BUFFER_SIZE);
+        CASE_STRINGIFY(CL_INVALID_MIP_LEVEL);
+        CASE_STRINGIFY(CL_INVALID_GLOBAL_WORK_SIZE);
+#ifdef CL_VERSION_1_2
+        CASE_STRINGIFY(CL_INVALID_PROPERTY);
+        CASE_STRINGIFY(CL_INVALID_IMAGE_DESCRIPTOR);
+        CASE_STRINGIFY(CL_INVALID_COMPILER_OPTIONS);
+        CASE_STRINGIFY(CL_INVALID_LINKER_OPTIONS);
+        CASE_STRINGIFY(CL_INVALID_DEVICE_PARTITION_COUNT);
+#endif
+    }
+    return "Unknown CL error";
+}
+
+
 cl_platform_id mclGetPlatformID()
 {
   /* Get the platform information */
@@ -267,6 +334,42 @@ mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, mclType type, 
   return res;
 }
 
+void* mclMap(mclContext ctx, mclDeviceData dd, cl_map_flags flags, size_t sz)
+{
+  logOclCall("clEnqueueMapBuffer");
+  cl_int ret;
+  cl_int* out = (cl_int*)clEnqueueMapBuffer(ctx.command_queue, dd.data, CL_TRUE, flags, 
+                                            0, sz, 0, 0, 0, &ret);
+  MCL_VALIDATE(ret, "Error mapping data");
+  return out;
+}
+
+void mclUnmap(mclContext ctx, mclDeviceData dd, void* ptr)
+{
+  logOclCall("clEnqueueUnmapMemObject");
+  cl_int ret;
+  ret = clEnqueueUnmapMemObject(ctx.command_queue, dd.data, ptr, 0, 0, 0);
+  MCL_VALIDATE(ret, "Error unmapping data");
+}
+
+mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, mclType type, cl_int n)
+{
+  // Copy argument to device    
+  cl_int ret;
+  size_t sz = n * mclSizeOfType(type);
+  logOclCall("clCreateBuffer");
+  cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
+  if (ret != CL_SUCCESS) {
+    fprintf(stderr, "MCL - Error creating buffer on device.\n");
+    exit(1);
+  }
+  mclDeviceData res;
+  res.buftype = buftype;
+  res.type = type;
+  res.data = data_device;
+  res.n = n;
+  return res;
+}
 
 void mclReleaseDeviceData(mclDeviceData* devData)
 {
@@ -297,13 +400,13 @@ void mclCallKernel(mclContext ctx, cl_program program, char* kernelName, cl_int 
   va_list ap;
   va_start(ap, args);
   mclDeviceData* devData = args;
-  for (int i = 0; devData != NULL; i++)
-    {
+  for (int i = 0; devData != NULL; i++) {
       logOclCall("clSetKernelArg");
       ret = clSetKernelArg(kernel, i, sizeof(cl_mem), (void*)&((*devData).data));
+
       if (ret != CL_SUCCESS) {
-	fprintf(stderr, "MCL - Error setting argument %d to kernel %s.\n", i, kernelName);
-	exit(1);
+        fprintf(stderr, "MCL - Error setting argument %d to kernel %s.\n", i, kernelName);
+        exit(1);
       }
       devData = va_arg(ap,mclDeviceData*);
     }
@@ -321,6 +424,47 @@ void mclCallKernel(mclContext ctx, cl_program program, char* kernelName, cl_int 
     fprintf(stderr, "MCL - Error releasing kernel %s.\n", kernelName);
     exit(1);
   }
+}
+
+cl_kernel mclCreateKernel(cl_program program, char* kernelName)
+{
+  // Create the kernel
+  cl_int ret;
+  logOclCall("clCreateKernel");
+  cl_kernel kernel = clCreateKernel(program, kernelName, &ret);
+  if (ret != CL_SUCCESS) {
+    fprintf(stderr, "MCL - Error creating kernel '%s' from program.\n", kernelName);
+    exit(1);
+  }
+  return kernel;
+}
+
+void mclSetKernelArg(cl_kernel kernel, cl_uint i, 
+                     size_t arg_size, const void *arg_value)
+{
+  cl_int ret;
+  logOclCall("clSetKernelArg");
+  ret = clSetKernelArg(kernel, i, arg_size, arg_value);
+  MCL_VALIDATE(ret, "Error setting argument");
+}
+
+void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
+                     cl_uint global_work_size, cl_uint local_work_size) {
+  cl_int ret;
+  logOclCall("clEnqueueNDRangeKernel");
+  size_t global_ws[3] = {global_work_size};
+  size_t local_ws[3] = {local_work_size};
+  ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 1, 
+                               NULL, global_ws, local_ws,
+                               0, NULL, NULL);
+  MCL_VALIDATE(ret, "Error invoking kernel");
+}
+
+void mclReleaseKernel(cl_kernel kernel)
+{
+  logOclCall("clReleaseKernel");
+  cl_int ret = clReleaseKernel(kernel);
+  MCL_VALIDATE(ret, "Error releasing kernel");
 }
 
 void mclReleaseContext(mclContext* ctx)
@@ -350,4 +494,11 @@ void mclReleaseContext(mclContext* ctx)
   }
   ctx->context = NULL;
   ctx->device_id = NULL;
+}
+
+void mclReleaseProgram(cl_program prog)
+{
+  logOclCall("clReleaseProgram");
+  cl_int ret = clReleaseProgram(prog);
+  MCL_VALIDATE(ret, "Failed to release program");
 }
