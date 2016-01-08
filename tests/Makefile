@@ -12,7 +12,7 @@ else
     INCLUDES=-I..
 endif
 
-TESTS=vecadd info
+TESTS=vecadd info reduce
 TESTEXES=$(TESTS:%=%.exe)
 TESTOUTS=$(TESTS:%=%.out)
 
