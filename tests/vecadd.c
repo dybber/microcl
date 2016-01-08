@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../mcl.h"
+#include <mcl.h>
 
 int main()
 {
@@ -33,7 +33,7 @@ int main()
     printf("arg1[%d] : %f\n", i, arg1[i]);
   }
   
-  ret = clReleaseProgram(program);
+  mclReleaseProgram(program);
   mclReleaseDeviceData(&dev_data);
   mclReleaseContext(&ctx);
   

@@ -8,34 +8,20 @@ ifeq ($(OS),Darwin)
     INCLUDES=
 else
     CC=gcc
-    CFLAGS=-fopenmp -O2 -std=c99
-    OPENCL_ROOTDIR ?= /usr/local/cuda
-    OPENCL_LIBDIR  := $(OPENCL_ROOTDIR)/lib64
-    OPENCL_INCDIR  ?= $(OPENCL_ROOTDIR)/include
-    LIB=-L$(OPENCL_LIBDIR) -lOpenCL
-    INCLUDES        = -I$(OPENCL_INCDIR) -I. -I../../include
+    CFLAGS=-Wall -W -O2 -std=c99
+    LIB=-lOpenCL
 endif
 
-TESTS=vecadd info
-TESTEXES=$(TESTS:%=tests/%.exe)
-TESTOUTS=$(TESTS:%=tests/%.out)
+.PHONY: all
+all: libmcl.a
 
-.PHONY: test
-test: $(TESTOUTS)
+libmcl.o: mcl.c
+	cc $(CFLAGS) $(INCLUDES) -o $@ -c $^ $(LIB)
 
-.PHONY: exes
-exes: $(TESTEXES)
+libmcl.a: libmcl.o
+	ar -rucv $@ $^
 
-.PHONY: info
-info: tests/info.out
-	cat $<
-
-.PHONY: clean
+.PHONE: clean
 clean:
-	rm -f *.amd *.apple *.intel *.nvidia *.o *~ */*~ */*.apple */*.o */*.exe *.exe tests/*.out
-
-%.exe: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -o $@ mcl.c $< $(LIB)
-
-tests/%.out: tests/%.exe
-	(cd tests; ./$*.exe > $*.out)
+	rm libmcl.o
+	rm libmcl.a
