@@ -38,8 +38,8 @@ typedef unsigned int mclType;
 
 typedef cl_int mclBufType;
 #define MCL_RW CL_MEM_READ_WRITE
-#define MCL_R CL_MEM_READ
-#define MCL_W CL_MEM_WRITE
+#define MCL_R CL_MEM_READ_ONLY
+#define MCL_W CL_MEM_WRITE_ONLY
 
 typedef struct
 {
@@ -70,6 +70,15 @@ void mclSetKernelArg(cl_kernel kernel, cl_uint i,
                      size_t arg_size, const void *arg_value);
 void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
                      cl_uint global_work_size, cl_uint local_work_size);
+
+void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
+                       cl_uint global_work_size_x,
+                       cl_uint global_work_size_y,
+                       cl_uint local_work_size_x,
+                       cl_uint local_work_size_y);
+
+void mclFinish(mclContext ctx);
+
 void mclReleaseKernel(cl_kernel kernel);
 
 void mclReleaseContext(mclContext* ctx);

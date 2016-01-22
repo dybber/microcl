@@ -262,8 +262,8 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
     fprintf(stderr, "MCL - Exiting: Failed to load kernel.\n");
     exit(1);
   }
-  char *source_str = (char *)malloc(MCL_MAX_STRING_LENGTH);
-  size_t source_size = fread( source_str, 1, MCL_MAX_STRING_LENGTH, fp );
+  char *source_str = (char *)malloc(MCL_MAX_SOURCE_SIZE);
+  size_t source_size = fread( source_str, 1, MCL_MAX_SOURCE_SIZE, fp );
   fclose( fp );
 
   cl_int ret;
@@ -274,7 +274,7 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
     exit(1);
   } 
   logOclCall("clBuildProgram");
-  ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
+  ret = clBuildProgram(program, 1, &device_id, "-cl-fast-relaxed-math", NULL, NULL);
   if (ret != CL_SUCCESS) {
     fprintf(stderr, "MCL - Exiting: Failed to build program.\n");
     char *build_log;
@@ -292,7 +292,6 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
   free(source_str);
   return program;
 }
-
 
 inline size_t mclSizeOfType(mclType t) {
   size_t sz;
@@ -452,12 +451,39 @@ void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
                      cl_uint global_work_size, cl_uint local_work_size) {
   cl_int ret;
   logOclCall("clEnqueueNDRangeKernel");
-  size_t global_ws[3] = {global_work_size};
-  size_t local_ws[3] = {local_work_size};
+  size_t global_ws[3] = {global_work_size, 0, 0};
+  size_t local_ws[3]  = {local_work_size, 0, 0};
   ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 1, 
                                NULL, global_ws, local_ws,
                                0, NULL, NULL);
   MCL_VALIDATE(ret, "Error invoking kernel");
+}
+
+void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
+                       cl_uint global_work_size_x,
+                       cl_uint global_work_size_y,
+                       cl_uint local_work_size_x,
+                       cl_uint local_work_size_y) {
+  cl_int ret;
+  logOclCall("clEnqueueNDRangeKernel");
+  size_t global_ws[3] = {global_work_size_x,
+                         global_work_size_y,
+                         0};
+  size_t local_ws[3] = {local_work_size_x,
+                        local_work_size_y,
+                        0};
+  ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 2, 
+                               NULL, global_ws, local_ws,
+                               0, NULL, NULL);
+  MCL_VALIDATE(ret, "Error invoking kernel");
+}
+
+void mclFinish(mclContext ctx) {
+  cl_int status = clFinish(ctx.command_queue);
+  MCL_VALIDATE(status, "Error on mclFinish (blocks till cmd queue is empty)");
+  if(status != CL_SUCCESS) {
+    printf("ErrorErrorErrorErrorErrorError\n");
+  }
 }
 
 void mclReleaseKernel(cl_kernel kernel)
