@@ -293,41 +293,60 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
   return program;
 }
 
-inline size_t mclSizeOfType(mclType t) {
-  size_t sz;
-  if (t == MCL_FLOAT) {
-    sz = sizeof(float);
-  } else if (t == MCL_INT) {
-    sz = sizeof(int);
-  } else if (t == MCL_DOUBLE) {
-    sz = sizeof(double);
-  } else {
-    fprintf(stderr, "MCL - Exiting: Unknown type of data.\n");
-    exit(1);
-  }     
-  return sz;
-}
+/* inline size_t mclSizeOfType(mclType t) { */
+/*   size_t sz; */
+/*   if (t == MCL_FLOAT) { */
+/*     sz = sizeof(float); */
+/*   } else if (t == MCL_INT) { */
+/*     sz = sizeof(int); */
+/*   } else if (t == MCL_DOUBLE) { */
+/*     sz = sizeof(double); */
+/*   } else { */
+/*     fprintf(stderr, "MCL - Exiting: Unknown type of data.\n"); */
+/*     exit(1); */
+/*   }      */
+/*   return sz; */
+/* } */
 
-mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, mclType type, void* data, cl_int n)
+mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, cl_int n, size_t size, void* data)
 {
   // Copy argument to device    
   cl_int ret;
-  size_t sz = n * mclSizeOfType(type);
+  size_t sz = n * size;
   logOclCall("clCreateBuffer");
   cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
   if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Error creating buffer on device.\n");
+    fprintf(stderr, "mclDataToDevice: Error creating buffer on device. OpenCL error: %s\n", mclErrorToString(ret));
     exit(1);
   }
   logOclCall("clEnqueueWriteBuffer");
   ret = clEnqueueWriteBuffer(ctx.command_queue, data_device, CL_TRUE, 0, sz, data, 0, NULL, NULL);
   if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Error copying data to device.\n");
+    fprintf(stderr, "mclDataToDevice - Error copying data to device. OpenCL error: %s\n", mclErrorToString(ret));
     exit(1);
   }
   mclDeviceData res;
   res.buftype = buftype;
-  res.type = type;
+  /* res.type = type; */
+  res.data = data_device;
+  res.n = n;
+  return res;
+}
+
+mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, cl_int n, size_t size)
+{
+  // Copy argument to device    
+  cl_int ret;
+  size_t sz = n * size;
+  logOclCall("clCreateBuffer");
+  cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
+  if (ret != CL_SUCCESS) {
+    fprintf(stderr, "mclAllocDevice: Error creating buffer on device. OpenCL error: %s\n", mclErrorToString(ret));
+    exit(1);
+  }
+  mclDeviceData res;
+  res.buftype = buftype;
+  /* res.type = type; */
   res.data = data_device;
   res.n = n;
   return res;
@@ -351,24 +370,6 @@ void mclUnmap(mclContext ctx, mclDeviceData dd, void* ptr)
   MCL_VALIDATE(ret, "Error unmapping data");
 }
 
-mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, mclType type, cl_int n)
-{
-  // Copy argument to device    
-  cl_int ret;
-  size_t sz = n * mclSizeOfType(type);
-  logOclCall("clCreateBuffer");
-  cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Error creating buffer on device.\n");
-    exit(1);
-  }
-  mclDeviceData res;
-  res.buftype = buftype;
-  res.type = type;
-  res.data = data_device;
-  res.n = n;
-  return res;
-}
 
 void mclReleaseDeviceData(mclDeviceData* devData)
 {

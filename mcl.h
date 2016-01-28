@@ -31,10 +31,10 @@ typedef struct
   cl_command_queue command_queue;
 } mclContext;
 
-typedef unsigned int mclType;
-#define MCL_FLOAT 0
-#define MCL_DOUBLE 1
-#define MCL_INT 2
+/* typedef unsigned int mclType; */
+/* #define MCL_FLOAT 0 */
+/* #define MCL_DOUBLE 1 */
+/* #define MCL_INT 2 */
 
 typedef cl_int mclBufType;
 #define MCL_RW CL_MEM_READ_WRITE
@@ -44,7 +44,7 @@ typedef cl_int mclBufType;
 typedef struct
 {
   mclBufType  buftype;
-  mclType     type;
+  /* mclType     type; */
   cl_mem      data;
   cl_int      n;
 } mclDeviceData;
@@ -52,12 +52,13 @@ typedef struct
 mclContext mclInitialize(unsigned int log_level);
 cl_program mclBuildProgram(mclContext ctx, const char* filename);
 
-mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, mclType type, void* data, cl_int n);
+mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, cl_int n, size_t sz, void* data);
+mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, cl_int n, size_t sz);
 
 void* mclMap(mclContext ctx, mclDeviceData dd, cl_map_flags flags, size_t sz);
 void mclUnmap(mclContext ctx, mclDeviceData dd, void* ptr);
 
-mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, mclType type, cl_int n);
+
 
 void mclReleaseDeviceData(mclDeviceData* devData);
 

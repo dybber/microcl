@@ -40,21 +40,20 @@ int main() {
     }
 
     printf("Copy input data to device memory \n");
-    mclDeviceData input_buf = mclDataToDevice(ctx, MCL_RW, MCL_INT, input, size);
+    mclDeviceData input_buf = mclDataToDevice(ctx, MCL_RW, sizeof(int), size, input);
 
     printf("Allocate shared memory \n");
-
     // For the first iteration only
     int nThreads = 1024; // threads per block
     int nBlocks = (size + nThreads - 1) / nThreads;
 
-    mclDeviceData out_buf = mclAllocDevice(ctx, MCL_RW, MCL_INT, nBlocks);
+    mclDeviceData out_buf = mclAllocDevice(ctx, MCL_RW, sizeof(int), nBlocks);
 
     cl_kernel kernel = mclCreateKernel(p, "reduce0");
 
     reduce(ctx, kernel, input_buf, out_buf, size, nThreads, nBlocks);
 
-    cl_int* out = (cl_int*)mclMap(ctx, out_buf, CL_MAP_READ, sizeof(cl_int));
+    cl_int* out = (cl_int*)mclMap(ctx, out_buf, MCL_R, sizeof(cl_int));
     
     // Check results
     printf("output:   %d\n", *out);
