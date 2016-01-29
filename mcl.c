@@ -458,6 +458,10 @@ void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
   ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 1, 
                                NULL, global_ws, local_ws,
                                0, NULL, NULL);
+  if (ret != CL_SUCCESS) {
+    fprintf(stderr, "mclInvokeKernel: %s\n", mclErrorToString(ret));
+    exit(1);
+  }
   MCL_VALIDATE(ret, "Error invoking kernel");
 }
 
