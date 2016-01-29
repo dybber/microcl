@@ -483,7 +483,7 @@ void mclFinish(mclContext ctx) {
   cl_int status = clFinish(ctx.command_queue);
   MCL_VALIDATE(status, "Error on mclFinish (blocks till cmd queue is empty)");
   if(status != CL_SUCCESS) {
-    printf("ErrorErrorErrorErrorErrorError\n");
+    fprintf(stderr, "mclFinish: %s\n", mclErrorToString(ret));
   }
 }
 
