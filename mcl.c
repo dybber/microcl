@@ -419,6 +419,7 @@ void mclCallKernel(mclContext ctx, cl_program program, char* kernelName, cl_int 
     fprintf(stderr, "MCL - Error calling kernel %s.\n", kernelName);
     exit(1);
   }
+  logOclCall("clReleaseKernel");
   ret = clReleaseKernel(kernel);
   if (ret != CL_SUCCESS) {
     fprintf(stderr, "MCL - Error releasing kernel %s.\n", kernelName);
@@ -480,10 +481,11 @@ void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
 }
 
 void mclFinish(mclContext ctx) {
-  cl_int status = clFinish(ctx.command_queue);
+  logOclCall("clFinish");
+  cl_int ret = clFinish(ctx.command_queue);
   MCL_VALIDATE(status, "Error on mclFinish (blocks till cmd queue is empty)");
   if(status != CL_SUCCESS) {
-    fprintf(stderr, "mclFinish: %s\n", mclErrorToString(status));
+    fprintf(stderr, "mclFinish: %s\n", mclErrorToString(ret));
   }
 }
 
