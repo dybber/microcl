@@ -483,8 +483,8 @@ void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
 void mclFinish(mclContext ctx) {
   logOclCall("clFinish");
   cl_int ret = clFinish(ctx.command_queue);
-  MCL_VALIDATE(status, "Error on mclFinish (blocks till cmd queue is empty)");
-  if(status != CL_SUCCESS) {
+  MCL_VALIDATE(ret, "Error on mclFinish (blocks till cmd queue is empty)");
+  if(ret != CL_SUCCESS) {
     fprintf(stderr, "mclFinish: %s\n", mclErrorToString(ret));
   }
 }
