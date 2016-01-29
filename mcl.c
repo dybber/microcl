@@ -224,10 +224,8 @@ cl_context mclCreateContext(cl_device_id* device_id)
   cl_int ret;
   logOclCall("clCreateContext");
   cl_context context = clCreateContext( NULL, 1, device_id, NULL, NULL, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Exiting: Failed to create context\n");
-    exit(1);
-  }
+
+  MCL_VALIDATE(ret, "mclCreateContext: Failed to create context.");
   return context;
 }
 
@@ -236,10 +234,7 @@ cl_command_queue mclCreateCommandQueue(cl_context context, cl_device_id device_i
   cl_int ret;
   logOclCall("clCreateCommmandQueue");
   cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Exiting: Failed to create command queue\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclCreateCommandQueue: Failed to create command queue.");
   return command_queue;
 }
 
@@ -269,10 +264,8 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
   cl_int ret;
   logOclCall("clCreateProgramWithSource");
   cl_program program = clCreateProgramWithSource(context, 1, (const char **)&source_str, (const size_t *)&source_size, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Exiting: Failed to create program.\n");
-    exit(1);
-  } 
+  MCL_VALIDATE(ret, "mclBuildProgram: Failed to create program.");
+
   logOclCall("clBuildProgram");
   ret = clBuildProgram(program, 1, &device_id, "-cl-fast-relaxed-math", NULL, NULL);
   if (ret != CL_SUCCESS) {
@@ -315,16 +308,12 @@ mclDeviceData mclDataToDevice(mclContext ctx, mclBufType buftype, cl_int n, size
   size_t sz = n * size;
   logOclCall("clCreateBuffer");
   cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "mclDataToDevice: Error creating buffer on device. OpenCL error: %s\n", mclErrorToString(ret));
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclDataToDevice: Error creating buffer on device.");
+
   logOclCall("clEnqueueWriteBuffer");
   ret = clEnqueueWriteBuffer(ctx.command_queue, data_device, CL_TRUE, 0, sz, data, 0, NULL, NULL);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "mclDataToDevice - Error copying data to device. OpenCL error: %s\n", mclErrorToString(ret));
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclDataToDevice: Error copying data to device.");
+
   mclDeviceData res;
   res.buftype = buftype;
   /* res.type = type; */
@@ -340,10 +329,7 @@ mclDeviceData mclAllocDevice(mclContext ctx, mclBufType buftype, cl_int n, size_
   size_t sz = n * size;
   logOclCall("clCreateBuffer");
   cl_mem data_device = clCreateBuffer(ctx.context, buftype, sz, NULL, &ret);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "mclAllocDevice: Error creating buffer on device. OpenCL error: %s\n", mclErrorToString(ret));
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclAllocDevice: Error creating buffer on device.");
   mclDeviceData res;
   res.buftype = buftype;
   /* res.type = type; */
@@ -358,7 +344,7 @@ void* mclMap(mclContext ctx, mclDeviceData dd, cl_map_flags flags, size_t sz)
   cl_int ret;
   cl_int* out = (cl_int*)clEnqueueMapBuffer(ctx.command_queue, dd.data, CL_TRUE, flags, 
                                             0, sz, 0, 0, 0, &ret);
-  MCL_VALIDATE(ret, "Error mapping data");
+  MCL_VALIDATE(ret, "mclMap: Error mapping data.");
   return out;
 }
 
@@ -367,7 +353,7 @@ void mclUnmap(mclContext ctx, mclDeviceData dd, void* ptr)
   logOclCall("clEnqueueUnmapMemObject");
   cl_int ret;
   ret = clEnqueueUnmapMemObject(ctx.command_queue, dd.data, ptr, 0, 0, 0);
-  MCL_VALIDATE(ret, "Error unmapping data");
+  MCL_VALIDATE(ret, "mclUnmap: Error unmapping data");
 }
 
 
@@ -377,10 +363,7 @@ void mclReleaseDeviceData(mclDeviceData* devData)
   logOclCall("clReleaseMemObject");
   ret = clReleaseMemObject(devData->data);
   devData->data = NULL;
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Failed to release device data.\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclReleaseDeviceData: Failed to release device data.");
 }
   
 
@@ -434,7 +417,7 @@ cl_kernel mclCreateKernel(cl_program program, char* kernelName)
   logOclCall("clCreateKernel");
   cl_kernel kernel = clCreateKernel(program, kernelName, &ret);
   if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Error creating kernel '%s' from program.\n", kernelName);
+    fprintf(stderr, "mclCreateKernel: Error creating kernel '%s' from program.\n", kernelName);
     exit(1);
   }
   return kernel;
@@ -446,7 +429,7 @@ void mclSetKernelArg(cl_kernel kernel, cl_uint i,
   cl_int ret;
   logOclCall("clSetKernelArg");
   ret = clSetKernelArg(kernel, i, arg_size, arg_value);
-  MCL_VALIDATE(ret, "Error setting argument");
+  MCL_VALIDATE(ret, "mclSetKernelArg: Error setting kernel argument.");
 }
 
 void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
@@ -458,10 +441,6 @@ void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
   ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 1, 
                                NULL, global_ws, local_ws,
                                0, NULL, NULL);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "mclInvokeKernel: %s\n", mclErrorToString(ret));
-    exit(1);
-  }
   MCL_VALIDATE(ret, "Error invoking kernel");
 }
 
@@ -487,44 +466,33 @@ void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
 void mclFinish(mclContext ctx) {
   logOclCall("clFinish");
   cl_int ret = clFinish(ctx.command_queue);
-  MCL_VALIDATE(ret, "Error on mclFinish (blocks till cmd queue is empty)");
-  if(ret != CL_SUCCESS) {
-    fprintf(stderr, "mclFinish: %s\n", mclErrorToString(ret));
-  }
+  MCL_VALIDATE(ret, "mclFinish: Error completing command queue.");
 }
 
 void mclReleaseKernel(cl_kernel kernel)
 {
   logOclCall("clReleaseKernel");
   cl_int ret = clReleaseKernel(kernel);
-  MCL_VALIDATE(ret, "Error releasing kernel");
+  MCL_VALIDATE(ret, "mclReleaseKernel: Error releasing kernel.");
 }
 
 void mclReleaseContext(mclContext* ctx)
 {
   cl_int ret;
   ret = clFlush(ctx->command_queue);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Failing to flush command queue.\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclReleaseContext: Failing to flush command queue.");
+
   ret = clFinish(ctx->command_queue);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Failing to finish command queue.\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclReleaseContext: Failing to finish command queue.");
+
   ret = clReleaseCommandQueue(ctx->command_queue);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Failing releasing command queue.\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclReleaseContext: Failing to release command queue.");
+
   ctx->command_queue = NULL;
 
   ret = clReleaseContext(ctx->context);
-  if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Failing releasing context.\n");
-    exit(1);
-  }
+  MCL_VALIDATE(ret, "mclReleaseContext: Failing to release context.");
+
   ctx->context = NULL;
   ctx->device_id = NULL;
 }
@@ -533,5 +501,5 @@ void mclReleaseProgram(cl_program prog)
 {
   logOclCall("clReleaseProgram");
   cl_int ret = clReleaseProgram(prog);
-  MCL_VALIDATE(ret, "Failed to release program");
+  MCL_VALIDATE(ret, "mclReleaseProgram: Failed to release program");
 }
