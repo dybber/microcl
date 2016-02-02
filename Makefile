@@ -3,13 +3,14 @@ is_64=$(shell s=`uname -m`; if (echo $$s | grep x86_64 > /dev/null); then echo 1
 
 ifeq ($(OS),Darwin)
     CC=clang
-    LIB=
     CFLAGS=-Wall -W -O2 -framework OpenCL -D_DEBUG
-    INCLUDES=
+    LIB=
+    INCLUDES=-I/usr/local/cuda/include
 else
     CC=gcc
     CFLAGS=-Wall -W -O2 -std=c99 -D_DEBUG
     LIB=-lOpenCL
+    INCLUDES=-I/usr/local/cuda/include
 endif
 
 .PHONY: all
