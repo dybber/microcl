@@ -4,12 +4,12 @@ ifeq ($(OS),Darwin)
     CC=clang
     LIB=-L..
     CFLAGS=-Wall-W -O2 -framework OpenCL
-    INCLUDES=-I..
+    INCLUDES=-I.. -I/usr/local/cuda/include/
 else
     CC=gcc
-    CFLAGS=-Wall -pedantic -Werror -Wshadow  -W -O2 -std=c99
+    CFLAGS=-Wall -pedantic -Wshadow  -W -O2 -std=c99
     LIB=-lOpenCL -lmcl
-    INCLUDES=-I..
+    INCLUDES=-I.. -I/usr/local/cuda/include/
 endif
 
 TESTS=vecadd info reduce
