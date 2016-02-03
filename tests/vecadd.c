@@ -15,7 +15,7 @@ int main()
   }
 
   // Copy argument to device    
-  mclDeviceData dev_data = mclDataToDevice(ctx, MCL_RW, MCL_FLOAT, arg1, arg1_sz);
+  mclDeviceData dev_data = mclDataToDevice(ctx, MCL_RW, arg1_sz, sizeof(float), arg1);
 
   // Call Kernel Program with argument
   mclCallKernel(ctx, program, "vecAdd14", arg1_sz, &dev_data, (mclDeviceData*)NULL);

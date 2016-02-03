@@ -108,13 +108,16 @@ cl_platform_id mclGetPlatformID()
 {
   /* Get the platform information */
   cl_uint num_platforms;
+  logOclCall("clGetPlatformIDs (get number of platforms)");
   clGetPlatformIDs(0, NULL, &num_platforms);             // get number of platforms
   cl_platform_id* platforms = calloc(sizeof(cl_platform_id), num_platforms);
+  logOclCall("clGetPlatformIDs (list of platforms, n = %d)", num_platforms);
   clGetPlatformIDs(num_platforms, platforms, NULL);     // populate platform table
   if (mclLogLevel > 1) {
     logStream(stdout,"System has %d platform(s):", num_platforms);
     for(cl_uint i = 0; i < num_platforms;i++) {
       char buf[MCL_MAX_STRING_LENGTH];
+      logOclCall("clGetPlatformInfo (get platform name for device %d)", i);
       clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
       logStream(stdout,"  Platform: %s", buf);
     }
@@ -132,8 +135,10 @@ cl_device_id mclGetGpuDeviceID()
 
   // Info about devices
   cl_uint num_devices;
+  logOclCall("clGetDeviceIDs (get number of devices)");
   clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices);
   cl_device_id* devices = calloc(sizeof(cl_device_id), num_devices);
+  logOclCall("clGetDeviceIDs (get list of devices)");
   clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_GPU, num_devices, devices, NULL);
 
   if (mclLogLevel > 1) {
@@ -141,7 +146,9 @@ cl_device_id mclGetGpuDeviceID()
     char buf1[MCL_MAX_STRING_LENGTH];
     char buf2[MCL_MAX_STRING_LENGTH];
     for(cl_uint i = 0; i < num_devices;i++) {
+      logOclCall("clGetDeviceInfo, name of device %d", i);
       clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf1, NULL);
+      logOclCall("clGetDeviceInfo, OpenCL version for device %d", i);
       clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf2, NULL);
       logStream(stdout, "   Device %d: %s, which supports %s", i, buf1, buf2);
     }
@@ -157,6 +164,7 @@ cl_device_id mclGetGpuDeviceID()
   cl_device_id device_id = devices[num_device];
   if (mclLogLevel > 0) {
     char buf[MCL_MAX_STRING_LENGTH];
+    logOclCall("clGetDeviceInfo, name of device %d", device_id);
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
     logStream(stdout,"Selected device %d: %s", num_device, buf);
     if (mclLogLevel > 2) {
@@ -172,8 +180,10 @@ cl_device_id mclGetBestDeviceID()
 
   // Info about devices
   cl_uint num_devices;
+  logOclCall("clGetDeviceIDs (get number of devices)");
   clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
   cl_device_id* devices = calloc(sizeof(cl_device_id), num_devices);
+  logOclCall("clGetDeviceIDs (get list of devices)");
   clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
 
   if (mclLogLevel > 1) {
@@ -181,7 +191,9 @@ cl_device_id mclGetBestDeviceID()
     char buf1[MCL_MAX_STRING_LENGTH];
     char buf2[MCL_MAX_STRING_LENGTH];
     for(cl_uint i = 0; i < num_devices;i++) {
+      logOclCall("clGetDeviceInfo, name of device %d", i);
       clGetDeviceInfo(devices[i], CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf1, NULL);
+      logOclCall("clGetDeviceInfo, OpenCL version for device %d", i);
       clGetDeviceInfo(devices[i], CL_DEVICE_VERSION, MCL_MAX_STRING_LENGTH, buf2, NULL);
       logStream(stdout, "   Device %d: %s, which supports %s", i, buf1, buf2);
     }
@@ -197,7 +209,9 @@ cl_device_id mclGetBestDeviceID()
   cl_uint bestIndex = 0;
   for (cl_uint i = 0; i < num_devices; i++) {
     cl_uint maxComputeUnits, maxClockFrequency;
+    logOclCall("clGetDeviceInfo, max compute unites device %d", i);
     clGetDeviceInfo(devices[i], CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &maxComputeUnits, NULL);
+    logOclCall("clGetDeviceInfo, max clock frequency %d", i);
     clGetDeviceInfo(devices[i], CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &maxClockFrequency, NULL);
     cl_uint index = maxComputeUnits * maxClockFrequency;
     if (index > bestIndex) {
@@ -209,6 +223,7 @@ cl_device_id mclGetBestDeviceID()
   cl_device_id device_id = devices[num_device];
   if (mclLogLevel > 0) {
     char buf[MCL_MAX_STRING_LENGTH];
+    logOclCall("clGetDeviceInfo, name of selected device (%d)", device_id);
     clGetDeviceInfo(device_id, CL_DEVICE_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
     logStream(stdout,"Selected device %d: %s", num_device, buf);
     if (mclLogLevel > 2) {
@@ -241,7 +256,13 @@ cl_command_queue mclCreateCommandQueue(cl_context context, cl_device_id device_i
 mclContext mclInitialize(unsigned int log_level) {
   mclLogLevel = log_level;
   mclContext context;
+  if (mclLogLevel > 1) {
+    logStream(stdout, "Obtaining best device.");
+  }
   context.device_id = mclGetBestDeviceID();
+  if (mclLogLevel > 1) {
+    logStream(stdout, "Creating context.");
+  }
   context.context = mclCreateContext(&context.device_id);
   context.command_queue = mclCreateCommandQueue(context.context,context.device_id);
   return context;
