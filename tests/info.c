@@ -4,14 +4,14 @@
 
 int main()
 {
-  mclInitialize(3);
+  mclContext ctx = mclInitialize(3);
   printf("Program ended succesfully.\n");
 
   // I don't know why this must be here!! Argh!
   cl_program prog;
   clReleaseProgram(prog);
 
-
+  mclReleaseContext(&ctx);
   return 0;
 }
 
