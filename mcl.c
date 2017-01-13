@@ -275,7 +275,7 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
   // Read file
   FILE *fp = fopen(filename, "r");
   if (!fp) {
-    fprintf(stderr, "MCL - Exiting: Failed to load kernel.\n");
+    fprintf(stderr, "MCL - Exiting: Failed to read kernel file.\n");
     exit(1);
   }
   char *source_str = (char *)malloc(MCL_MAX_SOURCE_SIZE);
@@ -285,12 +285,12 @@ cl_program mclBuildProgram(mclContext ctx, const char* filename)
   cl_int ret;
   logOclCall("clCreateProgramWithSource");
   cl_program program = clCreateProgramWithSource(context, 1, (const char **)&source_str, (const size_t *)&source_size, &ret);
-  MCL_VALIDATE(ret, "mclBuildProgram: Failed to create program.");
+  MCL_VALIDATE(ret, "mclBuildProgram: Failed to create program (clCreateProgramWithSource).");
 
   logOclCall("clBuildProgram");
   ret = clBuildProgram(program, 1, &device_id, "-cl-fast-relaxed-math", NULL, NULL);
   if (ret != CL_SUCCESS) {
-    fprintf(stderr, "MCL - Exiting: Failed to build program.\n");
+    MCL_VALIDATE(ret, "MCL - Exiting: Failed to build program (clBuildProgram).\n");
     char *build_log;
     size_t ret_val_size;
     clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &ret_val_size);

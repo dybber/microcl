@@ -16,7 +16,7 @@
 {\
     if (in_status != CL_SUCCESS)\
     {\
-      printf("%s(%d): %s. OpenCL returned: %d (%s)\n", \
+      fprintf(stderr, "%s(%d): %s. OpenCL returned: %d (%s)\n",          \
                __FILE__, __LINE__, msg, in_status, mclErrorToString(in_status)); \
     }\
 }
