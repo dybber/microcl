@@ -20,7 +20,7 @@ libmcl.o: mcl.c mcl_device_info.h mcl.h
 	cc $(CFLAGS) $(INCLUDES) -o $@ -c mcl.c $(LIB)
 
 libmcl.a: libmcl.o
-	ar -rucv $@ $^
+	ar -rcv $@ $^
 
 .PHONE: clean
 clean:

@@ -35,6 +35,7 @@ typedef struct
   cl_uint                       m_vecWidthLong;
   cl_uint                       m_vecWidthFloat;
   cl_uint                       m_vecWidthDouble;
+  size_t                        m_profilingTimerResolution;
 } mclDeviceInfo;
 
 void mclGetDeviceInfo(cl_device_id device, mclDeviceInfo* info) {
@@ -93,6 +94,7 @@ void mclGetDeviceInfo(cl_device_id device, mclDeviceInfo* info) {
   clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG, sizeof(cl_uint), &info->m_vecWidthLong, NULL);
   clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &info->m_vecWidthFloat, NULL);
   clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE, sizeof(cl_uint), &info->m_vecWidthDouble, NULL);
+  clGetDeviceInfo(device, CL_DEVICE_PROFILING_TIMER_RESOLUTION, sizeof(size_t), &info->m_profilingTimerResolution, NULL);
 }
 
 void mclPrintDeviceInfo(cl_device_id device) {
@@ -149,4 +151,5 @@ void mclPrintDeviceInfo(cl_device_id device) {
   printf("  CL_DEVICE_PREFERRED_VECTOR_WIDTH_<t>\t");
   printf("CHAR %u, SHORT %u, INT %u,LONG %u, FLOAT %u, DOUBLE %u\n\n\n",
 	 info.m_vecWidthChar, info.m_vecWidthShort, info.m_vecWidthInt, info.m_vecWidthLong,info.m_vecWidthFloat, info.m_vecWidthDouble);
+  printf("  CL_DEVICE_PROFILING_TIMER_RESOLUTION:\t\t%ld nanosecond(s)\n", info.m_profilingTimerResolution);
 }

@@ -248,7 +248,14 @@ cl_command_queue mclCreateCommandQueue(cl_context context, cl_device_id device_i
 {
   cl_int ret;
   logOclCall("clCreateCommmandQueue");
-  cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
+  cl_queue_properties queue_properties[] = {
+    CL_QUEUE_PROPERTIES,
+    //CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE | CL_QUEUE_ON_DEVICE | CL_QUEUE_ON_DEVICE_DEFAULT,
+    CL_QUEUE_PROFILING_ENABLE,
+    //CL_QUEUE_SIZE,
+    0
+  };
+  cl_command_queue command_queue = clCreateCommandQueueWithProperties(context, device_id, (const cl_queue_properties *)queue_properties, &ret);
   MCL_VALIDATE(ret, "mclCreateCommandQueue: Failed to create command queue.");
   return command_queue;
 }
