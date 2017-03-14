@@ -71,6 +71,8 @@ void mclSetKernelArg(cl_kernel kernel, cl_uint i,
                      size_t arg_size, const void *arg_value);
 void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
                      cl_uint global_work_size, cl_uint local_work_size);
+cl_ulong mclProfileKernel(mclContext ctx, cl_kernel kernel,
+                          cl_uint global_work_size, cl_uint local_work_size);
 
 void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
                        cl_uint global_work_size_x,

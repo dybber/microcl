@@ -120,6 +120,10 @@ cl_platform_id mclGetPlatformID()
       logOclCall("clGetPlatformInfo (get platform name for device %d)", i);
       clGetPlatformInfo(platforms[i], CL_PLATFORM_NAME, MCL_MAX_STRING_LENGTH, buf, NULL);
       logStream(stdout,"  Platform: %s", buf);
+      clGetPlatformInfo(platforms[i], CL_PLATFORM_VERSION, MCL_MAX_STRING_LENGTH, buf, NULL);
+      logStream(stdout,"  Version: %s", buf);
+      clGetPlatformInfo(platforms[i], CL_PLATFORM_EXTENSIONS, MCL_MAX_STRING_LENGTH, buf, NULL);
+      logStream(stdout,"  Supported extensions: %s", buf);
     }
   }
   if (num_platforms == 0) {
@@ -471,6 +475,28 @@ void mclInvokeKernel(mclContext ctx, cl_kernel kernel,
                                0, NULL, NULL);
   MCL_VALIDATE(ret, "Error invoking kernel");
 }
+
+cl_ulong mclProfileKernel(mclContext ctx, cl_kernel kernel,
+                          cl_uint global_work_size, cl_uint local_work_size) {
+  cl_int ret;
+  cl_event event;
+  cl_ulong tstart, tend;
+  logOclCall("clEnqueueNDRangeKernel");
+  size_t global_ws[3] = {global_work_size, 0, 0};
+  size_t local_ws[3]  = {local_work_size, 0, 0};
+  ret = clEnqueueNDRangeKernel(ctx.command_queue, kernel, 1, 
+                               NULL, global_ws, local_ws,
+                               0, NULL, &event);
+  MCL_VALIDATE(ret, "Error profiling kernel call (clEnqueueNDRangeKernel))");
+  ret = clWaitForEvents(1, &event);
+  MCL_VALIDATE(ret, "Error profiling kernel call (clWaitForEvents)");
+  ret = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(tstart), &tstart, NULL);
+  MCL_VALIDATE(ret, "Error profiling kernel call: Kernel run get time start.");
+  ret = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(tend), &tend, NULL);
+  MCL_VALIDATE(ret, "Error profiling kernel call: Kernel run get time end.");
+  return (tend - tstart);
+}
+
 
 void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
                        cl_uint global_work_size_x,

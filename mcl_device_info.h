@@ -149,7 +149,13 @@ void mclPrintDeviceInfo(cl_device_id device) {
     printf("  CL_DEVICE_EXTENSIONS: None\n");
   }
   printf("  CL_DEVICE_PREFERRED_VECTOR_WIDTH_<t>\t");
-  printf("CHAR %u, SHORT %u, INT %u,LONG %u, FLOAT %u, DOUBLE %u\n\n\n",
+  printf("CHAR %u, SHORT %u, INT %u,LONG %u, FLOAT %u, DOUBLE %u\n",
 	 info.m_vecWidthChar, info.m_vecWidthShort, info.m_vecWidthInt, info.m_vecWidthLong,info.m_vecWidthFloat, info.m_vecWidthDouble);
-  printf("  CL_DEVICE_PROFILING_TIMER_RESOLUTION:\t\t%ld nanosecond(s)\n", info.m_profilingTimerResolution);
+  printf("  CL_DEVICE_PROFILING_TIMER_RESOLUTION:\t%ld nanosecond(s)\n", info.m_profilingTimerResolution);
+
+  char buf[1024];
+  clGetDeviceInfo(device, CL_DEVICE_OPENCL_C_VERSION, 1024, buf, NULL);
+  printf("  CL_DEVICE_OPENCL_C_VERSION:\t\t%s\n", buf);
+
+  printf("\n\n");
 }
