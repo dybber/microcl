@@ -80,6 +80,12 @@ void mclInvokeKernel2D(mclContext ctx, cl_kernel kernel,
                        cl_uint local_work_size_x,
                        cl_uint local_work_size_y);
 
+cl_ulong mclProfileKernel2D(mclContext ctx, cl_kernel kernel,
+                            cl_uint global_work_size_x,
+                            cl_uint global_work_size_y,
+                            cl_uint local_work_size_x,
+                            cl_uint local_work_size_y);
+
 void mclFinish(mclContext ctx);
 
 void mclReleaseKernel(cl_kernel kernel);
